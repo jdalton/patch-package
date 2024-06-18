@@ -37,7 +37,7 @@ function getInstalledPackageVersion({
   path: string
   pathSpecifier: string
   isDevOnly: boolean
-  patchFilename: string,
+  patchFilename: string
   ignoreMissing: boolean
 }): null | string {
   const packageDir = join(appPath, path)
@@ -102,7 +102,7 @@ export function applyPatchesForApp({
   shouldExitWithError,
   shouldExitWithWarning,
   bestEffort,
-  ignoreMissing
+  ignoreMissing,
 }: {
   appPath: string
   reverse: boolean
@@ -134,7 +134,7 @@ export function applyPatchesForApp({
       warnings,
       errors,
       bestEffort,
-      ignoreMissing
+      ignoreMissing,
     })
   }
 
@@ -177,7 +177,7 @@ export function applyPatchesForPackage({
   warnings,
   errors,
   bestEffort,
-  ignoreMissing
+  ignoreMissing,
 }: {
   patches: PatchedPackageDetails[]
   appPath: string
@@ -254,7 +254,7 @@ export function applyPatchesForPackage({
               patchDetails,
             })),
         patchFilename,
-        ignoreMissing
+        ignoreMissing,
       })
       if (!installedPackageVersion) {
         // it's ok we're ignoring missing packages OR in production mode and this is a dev only package

@@ -17,9 +17,7 @@ export interface PatchedPackageDetails extends PackageDetails {
   sequenceNumber?: number
 }
 
-export function parseNameAndVersion(
-  str: string,
-): {
+export function parseNameAndVersion(str: string): {
   packageName: string
   version?: string
   sequenceName?: string
