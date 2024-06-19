@@ -4,7 +4,7 @@ import { PackageManager, detectPackageManager } from "./detectPackageManager"
 import { readFileSync, existsSync } from "fs-extra"
 import { parse as parseYarnLockFile } from "@yarnpkg/lockfile"
 import yaml from "yaml"
-import findWorkspaceRoot from "find-yarn-workspace-root"
+import { findWorkspacesRoot } from "find-workspaces"
 import { getPackageVersion } from "./getPackageVersion"
 import { coerceSemVer } from "./coerceSemVer"
 
@@ -17,19 +17,26 @@ export function getPackageResolution({
   packageManager: PackageManager
   appPath: string
 }) {
-  if (packageManager === "yarn") {
-    let lockFilePath = "yarn.lock"
-    if (!existsSync(lockFilePath)) {
-      const workspaceRoot = findWorkspaceRoot()
-      if (!workspaceRoot) {
-        throw new Error("Can't find yarn.lock file")
-      }
-      lockFilePath = join(workspaceRoot, "yarn.lock")
+  const isYarn = packageManager === "yarn"
+  const lockfileName = isYarn
+    ? "yarn.lock"
+    : packageManager === "npm-shrinkwrap"
+    ? "npm-shrinkwrap.json"
+    : "package-lock.json"
+  let lockfilePath = lockfileName
+  if (!existsSync(lockfilePath)) {
+    const workspaceRoot = findWorkspacesRoot(appPath)
+    if (!workspaceRoot) {
+      throw new Error(`Can't find ${lockfileName} file`)
     }
-    if (!existsSync(lockFilePath)) {
-      throw new Error("Can't find yarn.lock file")
-    }
-    const lockFileString = readFileSync(lockFilePath).toString()
+    lockfilePath = join(workspaceRoot.location, lockfileName)
+  }
+  if (!existsSync(lockfilePath)) {
+    throw new Error(`Can't find ${lockfileName} file`)
+  }
+  const lockfileString = readFileSync(lockfilePath, "utf8")
+
+  if (isYarn) {
     let appLockFile: Record<
       string,
       {
@@ -38,8 +45,8 @@ export function getPackageResolution({
         resolved?: string
       }
     >
-    if (lockFileString.includes("yarn lockfile v1")) {
-      const parsedYarnLockFile = parseYarnLockFile(lockFileString)
+    if (lockfileString.includes("yarn lockfile v1")) {
+      const parsedYarnLockFile = parseYarnLockFile(lockfileString)
       if (parsedYarnLockFile.type !== "success") {
         throw new Error("Could not parse yarn v1 lock file")
       } else {
@@ -47,7 +54,7 @@ export function getPackageResolution({
       }
     } else {
       try {
-        appLockFile = yaml.parse(lockFileString)
+        appLockFile = yaml.parse(lockfileString)
       } catch (e) {
         console.log(e)
         throw new Error("Could not parse yarn v2 lock file")
@@ -106,17 +113,12 @@ export function getPackageResolution({
     // add `resolutionVersion` to ensure correct version, `^1.0.0` could resolve latest `v1.3.0`, but `^1.0.0 1.2.1` won't
     return resolutionVersion ? resolution + " " + resolutionVersion : resolution
   } else {
-    const lockfile = require(join(
-      appPath,
-      packageManager === "npm-shrinkwrap"
-        ? "npm-shrinkwrap.json"
-        : "package-lock.json",
-    ))
-    const lockFileStack = [lockfile]
+    const lockfile = JSON.parse(lockfileString)
+    const lockfileStack = [lockfile]
     for (const name of packageDetails.packageNames.slice(0, -1)) {
-      const { dependencies } = lockFileStack[0]
+      const { dependencies } = lockfileStack[0]
       if (dependencies && name in dependencies) {
-        lockFileStack.push(dependencies[name])
+        lockfileStack.push(dependencies[name])
       }
     }
 
@@ -136,8 +138,8 @@ export function getPackageResolution({
       }
     }
 
-    lockFileStack.reverse()
-    const relevantStackEntry = lockFileStack.find((entry) => {
+    lockfileStack.reverse()
+    const relevantStackEntry = lockfileStack.find((entry) => {
       if (entry.dependencies) {
         return entry.dependencies && packageDetails.name in entry.dependencies
       } else if (entry.packages) {
