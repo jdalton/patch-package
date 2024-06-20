@@ -1,7 +1,7 @@
 // Place your settings in this file to overwrite default and user settings.
 {
   "editor.trimAutoWhitespace": false,
-  "files.trimTrailingWhitespace": false,
+  "files.trimTrailingWhitespace": true,
   "files.insertFinalNewline": false,
   "search.exclude": {
     "**/node_modules": true,

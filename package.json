@@ -1,16 +1,18 @@
 {
-  "name": "patch-package",
-  "version": "8.0.0",
+  "name": "@jdalton/patch-package",
+  "version": "8.1.0",
   "description": "Fix broken node modules with no fuss",
   "main": "dist/index.js",
   "repository": "github:ds300/patch-package",
-  "author": "David Sheldrick",
+  "author": "John-David <john.david.dalton@gmail.com>",
   "license": "MIT",
   "engines": {
     "node": ">=14",
     "npm": ">5"
   },
-  "bin": "./index.js",
+  "bin": {
+    "patch-package": "./index.js"
+  },
   "scripts": {
     "prepublishOnly": "yarn run clean && yarn run build",
     "build": "tsc --project tsconfig.build.json",
